@@ -1,0 +1,58 @@
+---
+- name: report software
+  hosts: all
+  vars:
+    #random settings
+    csv_path: /tmp
+    csv_filename: report.csv
+    headers: Computer Name, Update Needed
+  tasks:
+    - name: Gather Updates
+      win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+        state: searched
+        server_selection: managed_server
+      register: update_results
+
+    - name: Set fact
+      ansible.builtin.set_fact:
+        title: | 
+          {% for k in update_results.updates %}
+          {{ update_results.updates[k].title }}
+          {% endfor %}
+
+    - name: Set facts
+      ansible.builtin.set_fact:         
+        found_count: "{{update_results.found_update_count}}"
+
+    - name: Save CSV headers
+      ansible.builtin.lineinfile:
+        dest: "{{ csv_path }}/{{ csv_filename }}"
+        line: "{{ headers }}"
+        create: true
+        state: present
+      delegate_to: localhost
+      run_once: true
+
+    - name: Build out CSV file
+      ansible.builtin.lineinfile:
+        dest: "{{ csv_path }}/{{ csv_filename }}"
+        line: "{{ inventory_hostname }}, {{ title }}"
+        create: true
+        state: present
+      delegate_to: localhost
+ 
+    - name: Read in CSV to variable
+      community.general.read_csv:
+        path: "{{ csv_path }}/{{ csv_filename }}"
+      register: csv_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: set stats
+      set_stats:
+        data:
+          "{{ site }}": " {{ lookup('template', 'report.html.j2') }} "  
+      run_once: true

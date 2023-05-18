@@ -1,0 +1,28 @@
+---
+- name: report software
+  hosts: all
+  vars:
+    #random settings
+    csv_path: /tmp
+    csv_filename: report.csv
+  tasks:
+
+    - name: Send e-mail
+      community.general.mail:
+        host: smtp-relay.gaming.mgam
+        port: 25
+        subject: Ansible-report
+        from: Ansible-Reports <ansible@everi.com>
+        to: justin.vanway@everi.com
+        #, benjamin.savage@everi.com, william.robards@everi.com, joshua.hill@everi.com 
+        body: "{{ email_body }}"
+ #       attach: "{{ csv_path }}/{{ csv_filename }}"
+        subtype: html
+        secure: never
+      delegate_to: localhost
+      run_once: true
+
+#    - name: Remove file (delete file)
+#      ansible.builtin.file:
+#        path: "{{ csv_path }}/{{ csv_filename }}"
+#        state: absent  
